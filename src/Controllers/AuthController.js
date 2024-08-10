@@ -1,8 +1,10 @@
 import Jwt from 'jsonwebtoken';
 import bcryptjs from 'bcryptjs';
 import mongoose from 'mongoose';
-import { JWT_SECRET, JWT_EXPIRES } from '../config.js';
+import { JWT_SECRET, JWT_EXPIRES, EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD } from '../config.js';
 import { ModelToken } from '../Middleware/Auth.js';
+import { text } from 'express';
+import { createEmail } from '../utils.js';
 
 
 /* We declare the type of data that our users' collection has in Mongo DB */
@@ -15,7 +17,6 @@ const schema = new mongoose.Schema({
 }, {versionKey:false})
 
 const modelUser = new mongoose.model('users', schema);
-
 
 /* Check if all the data is not empty*/
 const validateUser = (name, lastName, email, password, group ) => { 
@@ -137,5 +138,49 @@ export const logout = async(req, res) => {
             status: false,
             message: [error.message]
         });
+    }
+}
+
+export const passwordRecover = async(req, res) => {
+    const {email} = req.body
+
+    if(email === undefined || email.trim() === '') {
+        return res.status(400).json({
+                status: false,
+                message: 'El correo no puede estar vacio'
+            });
+    } else {
+        const user = await modelUser.findOne({email: email})
+        if(user.length == 0 || !isPasswordCorrect) {
+            return res.status(404).json({
+                status: false,
+                errors:['Usuario inexistente']
+            })
+        }
+        const token = Jwt.sign(
+            {data: user}, // creates a diferent token to recover the password
+            JWT_SECRET_PASSWORD_RECOVER, {expiresIn: JWT_EXPIRES}
+        )
+
+        const email = {
+            from: 'EmployeeApp',
+            to: user.email,
+            subject: 'Recupera tu contraseña',
+            text: `Hola ${user.name} ${user.lastName} para recuperar tu contraseña hace click en el boton de abajo`,
+            html: `
+                <button>click me</button>
+            `
+        }
+
+        createEmail(email).then( (data) => {            
+            if(data.status) {
+                res.status(200).json({
+                    status: true,
+                    message: 'Se ha enviado un correo electronico a tu casilla para que recuperes tu contraseña'
+                })
+            } else {
+                res.status(400).json(data)
+            }
+        })
     }
 }
