@@ -19,7 +19,7 @@ const logSchema = new mongoose.Schema({
     userDetails: {}
 })
 
-const ModelLogRegister = new mongoose.model('logRegister', logSchema)
+export const ModelLogRegister = new mongoose.model('logRegister', logSchema)
 
 export const verify = Router()
 
