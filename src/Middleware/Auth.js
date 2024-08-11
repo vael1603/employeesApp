@@ -1,7 +1,8 @@
-import { Router } from 'express'
-import Jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '../config.js'
-import mongoose from 'mongoose'
+import { Router } from 'express';
+import Jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import { JWT_SECRET } from '../config.js';
+import { resHandler } from "../utils.js";
 
 const tokenSchema = new mongoose.Schema({
     token: String,
@@ -26,9 +27,7 @@ export const verify = Router()
 verify.use( async(req, res, next) => {
     let token = req.headers['x-access-token'] || req.headers['authorization']
     if(!token) {
-        return res.status(401).json({
-            status:false, errors:['No estas Autorizado']
-        })
+        return resHandler(res, 401, 'Not Authorized')
     }
     if(token.startsWith('Bearer')) {
         token = token.slice(7, token.length)
@@ -36,7 +35,7 @@ verify.use( async(req, res, next) => {
         if(isTokenInBlacklist.length == 0) {
             Jwt.verify(token, JWT_SECRET, async(error, decoded) => {
                 if(error) {
-                    return res.status(401).json({status: false, errors: ['Token No válido']})
+                    return resHandler(res, 401, 'Invalid Token')
                 } else {
                     req.decode = decoded
                     // We Save all the calls to the api in MONGO
@@ -54,9 +53,9 @@ verify.use( async(req, res, next) => {
                 }
             })
         } else {
-            return res.status(401).json({status: false, errors: ['Token No válido']})
+            return resHandler(res, 401, 'Invalid Token')
         }
     } else {
-        return res.status(401).json({status: false, errors: ['Token No válido']})
+        return resHandler(res, 401, 'Invalid Token')
     }
 })

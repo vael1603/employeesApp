@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import * as fs from 'fs'
 import { error } from "console";
+import { resHandler } from "../utils.js";
 
 const schema = new mongoose.Schema({
     name: String,
@@ -15,16 +16,16 @@ const ModelEmployees = new mongoose.model('employees', schema)
 const validateEmployee = (name, lastName, birthDay, jobPosition) => { 
     var errors = [];
     if(name === undefined || name.trim() === '') {
-        errors.push('El Nombre no debe estar vacio');
+        errors.push('Name cannot be empty');
     }
     if(lastName === undefined || lastName.trim() === '') {
-        errors.push('El Apellido no debe estar vacio');
+        errors.push('Lastname cannot be empty');
     }
     if(birthDay === undefined || birthDay.trim() === '') {
-        errors.push('La Fecha de Nacimiento no debe estar vacia');
+        errors.push('Birthday cannot be empty');
     }
     if(jobPosition === undefined || jobPosition.trim() === '') {
-        errors.push('El Puesto de trabajo no debe estar vacio');
+        errors.push('job position cannot be empty');
     }
     return errors
 }
@@ -33,10 +34,10 @@ export const getEmployees = async(req, res) => {
     try {
         const {id} = req.params
         const rows = (id === undefined) ? await ModelEmployees.find() : await ModelEmployees.findById(id)
-        return res.status(200).json({status: true, data: rows})
+        return resHandler(res, 200, 'Employee/s successfully obtained', rows)
 
     } catch(error) {
-        return res.status(500).json({status: false, errors: [error]})
+        return resHandler(res, 500, error.message)
     }
 }
 
@@ -52,27 +53,17 @@ export const createNewEmployee = async(req, res) => {
                 birthDay: birthDay,
                 jobPosition: jobPosition
             })
-            console.log('TESTING')
-            return await newEmployee.save().then( () => {
-                console.log('lalala')
-                res.status(200).json({
-                    status: true,
-                    message: 'Empleado Creado'
-                });
+
+            return await newEmployee.save().then( (savedItem) => {
+                return resHandler(res, 200, 'Employee Created', savedItem)
             }) 
         } else {
             // if any parameter has an error it return a 400 error with a description
-            return res.status(400).json({
-                status: false,
-                message: validation
-            });
+            return resHandler(res, 400, validation)
         }
 
     } catch(error) {
-        return res.status(500).json({
-            status: false,
-            errors: [error]
-        });
+        return resHandler(res, 500, error.message)
     }
 }
 
@@ -90,24 +81,15 @@ export const updateEmployee = async(req, res) => {
         let validation = validateEmployee(name, lastName, birthDay, jobPosition)
         if(validation == '') {
             return await ModelEmployees.updateOne({_id: id}, {$set: newValues}).then( () => {
-                res.status(200).json({
-                    status: true,
-                    message: 'Datos de Empleado actualizados'
-                });
+                resHandler(res, 200, "Employee's data updated")
             }) 
         } else {
             // if any parameter has an error it return a 400 error with a description
-            return res.status(400).json({
-                status: false,
-                message: validation
-            });
+            return resHandler(res, 400, validation)
         }
 
     } catch(error) {
-        return res.status(500).json({
-            status: false,
-            errors: [error.message]
-        });
+        return resHandler(res, 500, error.message)
     }
 }
 
@@ -115,8 +97,8 @@ export const deleteEmployee = async(req, res) => {
     try {
         const {id} = req.params
         await ModelEmployees.deleteOne({_id: id})
-        return res.status(200).json({status: true, message: 'Empleado Eliminado'})
-    } catch {
-        return res.status(500).json({status: false, errors: [error.message]})
+        return resHandler(res, 200, 'Employee deleted')
+    } catch(error) {
+        return resHandler(res, 500, error.message)
     }
 }

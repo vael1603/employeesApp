@@ -19,6 +19,16 @@ export const createEmail = async(email) => {
         await transporter.sendMail(email);
         return { status: true, message: ['El correo ha sido enviado'] };
     } catch (error) {
-        return { status: false, message: [error.message] };
+        return { status: false, message: error.message };
     }
+}
+
+export const resHandler = (res, code, message, data = null) => {
+    const status = (code === 200)
+
+    return res.status(code).json({
+        status: status,
+        message: message,
+        data: data
+    });
 }

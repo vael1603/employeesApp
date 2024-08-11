@@ -3,7 +3,7 @@ import Jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { JWT_EXPIRES, JWT_SECRET, JWT_SECRET_PASSWORD_RECOVER } from '../config.js';
 import { ModelToken } from '../Middleware/Auth.js';
-import { createEmail } from '../utils.js';
+import { createEmail, resHandler } from '../utils.js';
 import { ModelLogRegister } from '../Middleware/Auth.js';
 
 
@@ -22,19 +22,19 @@ const ModelUser = new mongoose.model('users', schema);
 const validateUser = (name, lastName, email, password, group ) => { 
     var errors = [];
     if(name === undefined || name.trim() === '') {
-        errors.push('El Nombre no debe estar vacio');
+        errors.push('Name cannot be empty');
     }
     if(lastName === undefined || lastName.trim() === '') {
-        errors.push('El Apellido no debe estar vacio');
+        errors.push('Lastname cannot be empty');
     }
     if(email === undefined || email.trim() === '') {
-        errors.push('El Correo electronico no debe estar vacio');
+        errors.push('email cannot be empty');
     }
     if(password === undefined || password.trim() === '' || password.length < 8){
-        errors.push('La Contraseña no debe estar vacia y debe tener minimo 8 caracteres');
+        errors.push('Password cannot be empty and should has 8 characters at least');
     }
     if(group === undefined || group.trim() === ''){
-        errors.push('El Grupo no debe estar vacio');
+        errors.push('the group cannot be empty');
     }
     return errors
 }
@@ -55,25 +55,16 @@ export const createUser = async(req, res) => {
                     password: hashedPassword,
                     group: group
             });
-            await newUser.save();
+            const savedItem = await newUser.save();
             
-            return res.status(200).json({
-                    status: true,
-                    message: 'Usuario Creado'
-            });
+            return resHandler(res, 200, 'User Created', savedItem)
         } else {
             // if any parameter has an error it return a 400 error with a description
-            return res.status(400).json({
-                status: false,
-                message: validation
-            });
+            return resHandler(res, 400, validation)
         }
     } catch (error) {
         // if something not related with the parameters failes it return a 500 error with the message 
-        return res.status(500).json({
-            status: false,
-            message: [error.message]
-        });
+        return resHandler(res, 500, error.message)
     }
 }
 
@@ -84,10 +75,7 @@ export const login = async(req, res) => {
         const isPasswordCorrect = await bcryptjs.compare(password, info.password)
         
         if(info.length == 0 || !isPasswordCorrect) {
-            return res.status(404).json({
-                status: false,
-                errors:['Usuario o Contraseña Incorrecta']
-            })
+            return resHandler(res, 404, 'User or password incorrect')
         }
         const token = Jwt.sign(
             {data: info}, // creates the token using ID, the email and the data of the user
@@ -97,17 +85,10 @@ export const login = async(req, res) => {
         // Returns the user data detail
         const user = {id: info._id, name: info.name, lastname: info.lastName, email: info.email, token: token}
         
-        return res.status(200).json({
-            status: true,
-            data: user,
-            message: 'Sesion Iniciada'
-        })
+        return resHandler(res, 200, 'Session Initialized', user)
     } catch (error){
         // if something not related with the parameters failes it return a 500 error with the message 
-        return res.status(500).json({
-            status: false,
-            message: [error.message]
-        });
+        return resHandler(res, 500, error.message)
     }
 }
 
@@ -120,24 +101,15 @@ export const logout = async(req, res) => {
                 const invalidToken = new ModelToken({ token: token})
                 
                 await invalidToken.save()
-                return res.status(200).json({
-                    status: true,
-                    message: 'Su sesion ha finalizado'
-                })
+                return resHandler(res, 200, 'Your session has ended')
             } else {
                 // if any parameter has an error it return a 400 error with a description
-                return res.status(401).json({
-                    status: false,
-                    message: 'No Autorizado'
-                });
+                return resHandler(res, 401, 'Not Authorized')
             }
         }
         
     } catch (error) {
-        return res.status(500).json({
-            status: false,
-            message: [error.message]
-        });
+        return resHandler(res, 500, error.message)
     }
 }
 
@@ -147,17 +119,11 @@ export const passwordRecover = async(req, res) => {
         const {email} = req.body
         
         if(email === undefined || email.trim() === '') {
-            return res.status(400).json({
-                status: false,
-                message: 'El correo no puede estar vacio'
-            });
+            return resHandler(res, 400, "Email can't be empty")
         } else {
             const user = await ModelUser.findOne({email: email})
             if(!user) {
-                return res.status(404).json({
-                    status: false,
-                    errors:['Usuario inexistente']
-                })
+                return resHandler(res, 404, "the user doesn't exist ")
             }
             const token = Jwt.sign(
                 {data: user}, // creates a diferent token to recover the password
@@ -181,19 +147,13 @@ export const passwordRecover = async(req, res) => {
             const emailResponse = await createEmail(emailTemplate)
             
             if(emailResponse.status) {
-                res.status(200).json({
-                    status: true,
-                    message: 'Se ha enviado un correo electronico a tu casilla para que recuperes tu contraseña'
-                })
+                return resHandler(res, 200, `We have sent you an email to ${user.email} to recover your password`)
             } else {
-                res.status(400).json(emailResponse)
+                return resHandler(res, 400, emailResponse.message)
             }
         }
     } catch (error) {
-        return res.status(500).json({
-            status: false,
-            message: [error.message]
-        });
+        return resHandler(res, 500, error.message)
     }
 }
     
@@ -205,10 +165,7 @@ export const updatePassword = async(req, res) => {
         
         //Validates the new password
         if(password === undefined || password.trim() === '' || password.length < 8){
-            return res.status(400).json({
-                status: false,
-                message: 'La contraseña no puede estar vacia y debe tener como minimo 8 caracteres'
-            });
+            return resHandler(res, 400, 'Password cannot be empty and should has 8 characters at least')
         }
 
         //check if is an old token of the blacklist
@@ -218,7 +175,7 @@ export const updatePassword = async(req, res) => {
             //Validate token
             Jwt.verify(token, JWT_SECRET_PASSWORD_RECOVER, async(error,decode) => {
                 if(error) {
-                    return res.status(401).json({status: false, errors: ['Token No válido']})
+                    return resHandler(res, 401, 'Invalid Token')
                 } else {
                     let userUpdated = decode.data
                     userUpdated.password = await bcryptjs.hash(password,8); // Hash the new password
@@ -241,23 +198,14 @@ export const updatePassword = async(req, res) => {
                         const invalidToken = new ModelToken({ token: token})
                         await invalidToken.save()
 
-                        res.status(200).json({
-                            status: true,
-                            message: 'Su contraseña ha sido actualizada'
-                        });
+                        return resHandler(res, 200, 'Your password has been updated')
                     }) 
                 }
             })
         } else {
-            return res.status(401).json({
-                status: false,
-                message: 'Token Invalido'
-            })
+            return resHandler(res, 401, 'Invalid Token')
         }
     } catch (error) {
-        return res.status(500).json({
-            status: false,
-            message: [error.message]
-        });
+        return resHandler(res, 500, error.message)
     }
 }
