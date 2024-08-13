@@ -5,7 +5,7 @@ import { resHandler } from "../utils.js";
 
 const schema = new mongoose.Schema({
     name: String,
-    lastName: String,
+    lastname: String,
     birthDay: String,
     jobPosition: String
 },{versionKey:false})
@@ -13,12 +13,12 @@ const schema = new mongoose.Schema({
 const ModelEmployees = new mongoose.model('employees', schema)
 
 /* Check if all the data is not empty*/
-const validateEmployee = (name, lastName, birthDay, jobPosition) => { 
+const validateEmployee = (name, lastname, birthDay, jobPosition) => { 
     var errors = [];
     if(name === undefined || name.trim() === '') {
         errors.push('Name cannot be empty');
     }
-    if(lastName === undefined || lastName.trim() === '') {
+    if(lastname === undefined || lastname.trim() === '') {
         errors.push('Lastname cannot be empty');
     }
     if(birthDay === undefined || birthDay.trim() === '') {
@@ -43,13 +43,13 @@ export const getEmployees = async(req, res) => {
 
 export const createNewEmployee = async(req, res) => {
     try {
-        const { name, lastName, birthDay, jobPosition } = req.body
-        let validation = validateEmployee(name, lastName, birthDay, jobPosition)
+        const { name, lastname, birthDay, jobPosition } = req.body
+        let validation = validateEmployee(name, lastname, birthDay, jobPosition)
 
         if(validation == '') {
             const newEmployee = await new ModelEmployees({
                 name: name,
-                lastName: lastName,
+                lastname: lastname,
                 birthDay: birthDay,
                 jobPosition: jobPosition
             })
@@ -70,15 +70,15 @@ export const createNewEmployee = async(req, res) => {
 export const updateEmployee = async(req, res) => {
     try {
         const { id } = req.params
-        const { name, lastName, birthDay, jobPosition } = req.body
+        const { name, lastname, birthDay, jobPosition } = req.body
         const newValues = {
             name: name,
-            lastName: lastName,
+            lastname: lastname,
             birthDay: birthDay,
             jobPosition: jobPosition
         }
 
-        let validation = validateEmployee(name, lastName, birthDay, jobPosition)
+        let validation = validateEmployee(name, lastname, birthDay, jobPosition)
         if(validation == '') {
             return await ModelEmployees.updateOne({_id: id}, {$set: newValues}).then( () => {
                 resHandler(res, 200, "Employee's data updated")

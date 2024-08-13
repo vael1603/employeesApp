@@ -10,7 +10,7 @@ import { ModelLogRegister } from '../Middleware/Auth.js';
 /* We declare the type of data that our users' collection has in Mongo DB */
 const schema = new mongoose.Schema({
     name: String,
-    lastName: String,
+    lastname: String,
     email: String,
     password: String,
     group: String
@@ -19,12 +19,12 @@ const schema = new mongoose.Schema({
 const ModelUser = new mongoose.model('users', schema);
 
 /* Check if all the data is not empty*/
-const validateUser = (name, lastName, email, password, group ) => { 
+const validateUser = (name, lastname, email, password, group ) => { 
     var errors = [];
     if(name === undefined || name.trim() === '') {
         errors.push('Name cannot be empty');
     }
-    if(lastName === undefined || lastName.trim() === '') {
+    if(lastname === undefined || lastname.trim() === '') {
         errors.push('Lastname cannot be empty');
     }
     if(email === undefined || email.trim() === '') {
@@ -42,15 +42,15 @@ const validateUser = (name, lastName, email, password, group ) => {
 /* Creates a new User*/
 export const createUser = async(req, res) => {
     try {
-        const {name, lastName, email, password, group} = req.body;
-        let validation = validateUser(name, lastName, email, password, group)
+        const {name, lastname, email, password, group} = req.body;
+        let validation = validateUser(name, lastname, email, password, group)
 
         // we check if all the parameters are correct
         if(validation == '') {
             let hashedPassword = await bcryptjs.hash(password,8);
             const newUser = new ModelUser({
                     name: name,
-                    lastName: lastName,
+                    lastname: lastname,
                     email: email,
                     password: hashedPassword,
                     group: group
@@ -72,18 +72,25 @@ export const login = async(req, res) => {
     try{
         const {email, password} = req.body
         const info = await ModelUser.findOne({email: email})
-        const isPasswordCorrect = await bcryptjs.compare(password, info.password)
+        const isPasswordCorrect = info ? await bcryptjs.compare(password, info?.password) : false
         
-        if(info.length == 0 || !isPasswordCorrect) {
+        if(!isPasswordCorrect) {
             return resHandler(res, 404, 'User or password incorrect')
         }
         const token = Jwt.sign(
-            {data: info}, // creates the token using ID, the email and the data of the user
+            {
+                data: {
+                    id: info._id,
+                    name: info.name,
+                    lastname: info.lastname,
+                    email: info.email
+                }
+            }, // creates the token using ID, the email and the data of the user
             JWT_SECRET, {expiresIn: JWT_EXPIRES}
         )
 
         // Returns the user data detail
-        const user = {id: info._id, name: info.name, lastname: info.lastName, email: info.email, token: token}
+        const user = {id: info._id, name: info.name, lastname: info.lastname, email: info.email, token: token, group: info.group}
         
         return resHandler(res, 200, 'Session Initialized', user)
     } catch (error){
@@ -135,7 +142,7 @@ export const passwordRecover = async(req, res) => {
                 to: user.email,
                 subject: 'Employee App: please recover your password',
                 html: `
-                    <strong> HI ${user.name} ${user.lastName} We received your request to update your password.</strong>
+                    <strong> HI ${user.name} ${user.lastname} We received your request to update your password.</strong>
                     <br/>
                     Please copy the token and paste on the app with your new password.
                     <br/>
@@ -147,7 +154,7 @@ export const passwordRecover = async(req, res) => {
             const emailResponse = await createEmail(emailTemplate)
             
             if(emailResponse.status) {
-                return resHandler(res, 200, `We have sent you an email to ${user.email} to recover your password`)
+                return resHandler(res, 200, `We have sent you a TOKEN to ${user.email} to recover your password`)
             } else {
                 return resHandler(res, 400, emailResponse.message)
             }

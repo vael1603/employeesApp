@@ -5,7 +5,7 @@ export const getPositions = async(req, res) => {
     try {
         fetch(positionAPI).then(response => response.json())
             .then( (response) =>{
-                return resHandler(res, 200, 'positions successfully obtained', response)
+                return resHandler(res, 200, 'positions successfully obtained', response.positions)
             })
     } catch (error) {
         return resHandler(res, 500, error.message)

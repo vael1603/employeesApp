@@ -5,7 +5,7 @@ const authRoutes = Router()
 
 authRoutes.post('/api/users', createUser)
 authRoutes.post('/api/login', login)
-authRoutes.post('/api/logout', logout)
+authRoutes.get('/api/logout', logout)
 authRoutes.post('/api/recoverPassword', passwordRecover)
 authRoutes.post('/api/updatePassword/:token', updatePassword)
 
