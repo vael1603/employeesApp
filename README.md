@@ -1,3 +1,5 @@
+API Deployed on https://ws-employees-app.vercel.app   Front end integration in https://vael1603.github.io/employee-app/login
+
 # WSEmployeApp
 
 This project was generated developed by Elias Valenzuela
