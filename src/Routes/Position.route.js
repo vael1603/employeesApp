@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getPositions } from '../Controllers/positionsController.js';
+import { getPositions } from '../Controllers/PositionsController.js';
 
 const positionRoutes = Router()
 
